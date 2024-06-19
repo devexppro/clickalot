@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clicker Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+        #clickCounter {
+            font-size: 24px;
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        #randomPlayers {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            width: 200px;
+            height: 400px;
+            overflow-y: hidden;
+        }
+        .player {
+            margin-bottom: 10px;
+            transition: all 1s ease-in-out;
+            opacity: 0;
+        }
+        .player.fade-in {
+            opacity: 1;
+        }
+        .player.fade-out {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        .hit-message {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: rgb(235, 142, 142);
+            font-weight: bold;
+            animation: growShrink 1s forwards;
+            z-index: 1000;
+        }
+        @keyframes growShrink {
+            0% { transform: translateX(-50%) scale(1); opacity: 1; }
+            50% { transform: translateX(-50%) scale(2); }
+            100% { transform: translateX(-50%) scale(0); opacity: 0; }
+        }
+        .circle-effect {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgb(199, 191, 191);
+            border-radius: 50%;
+            animation: expandAndFade 1s forwards;
+        }
+        @keyframes expandAndFade {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .falling-image {
+            position: absolute;
+            width: 20px;
+            height: 40px;
+            animation: fall 3s forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="clickCounter">Clicks: 0</div>
+    
+    <!-- Random Players Panel -->
+    <div id="randomPlayers"></div>
+
+    <!-- Name Panel -->
+    <div id="namePanel">
+        <h2>Choose Name</h2>
+        <input type="text" id="playerNameInput" placeholder="Enter your name">
+        <button id="namePanelOkButton">OK</button>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let clickCount = parseInt(localStorage.getItem("clickerGameClickCount")) || 0;
+            let playerName = localStorage.getItem("clickerGamePlayerName");
+            const clickCounterElement = document.getElementById("clickCounter");
+            const namePanel = document.getElementById("namePanel");
+            const namePanelOkButton = document.getElementById("namePanelOkButton");
+            const playerNameInput = document.getElementById("playerNameInput");
+            const randomPlayersContainer = document.getElementById("randomPlayers");
+            let hitMessageCount = 0;
+
+            clickCounterElement.textContent = `Clicks: ${clickCount}`;
+
+            if (playerName) {
+                namePanel.style.display = "none"; // Hide the name panel
+            }
+
+            namePanelOkButton.addEventListener("click", () => {
+                playerName = playerNameInput.value.trim();
+
+                if (playerName) {
+                    namePanel.classList.remove("show");
+                    namePanel.style.display = "none";
+                    localStorage.setItem("clickerGamePlayerName", playerName);
+                } else {
+                    alert("Please enter your name.");
+                }
+            });
+
+            document.addEventListener("click", (event) => {
+                if (event.target.id === "clickCounter" || event.target.closest("#namePanel")) return;
+
+                clickCount++;
+                localStorage.setItem("clickerGameClickCount", clickCount);
+                clickCounterElement.textContent = `Clicks: ${clickCount}`;
+
+                showCircleEffect(event.clientX, event.clientY);
+
+                if (Math.random() < 0.2) {
+                    showHitMessage("What a hit!");
+                }
+
+                createFallingImage(event.clientX, event.clientY);
+
+                if (clickCount % 100 === 0) {
+                    createShowerOfImages();
+                    showHitMessage("Critical Hit!");
+                }
+            });
+
+            function showCircleEffect(x, y) {
+                const circleEffect = document.createElement("div");
+                circleEffect.classList.add("circle-effect");
+                circleEffect.style.left = `${x - 15}px`;
+                circleEffect.style.top = `${y - 15}px`;
+                document.body.appendChild(circleEffect);
+
+                setTimeout(() => {
+                    circleEffect.remove();
+                }, 1000);
+            }
+
+            function showHitMessage(message) {
+                hitMessageCount++;
+                const hitMessage = document.createElement("div");
+                hitMessage.classList.add("hit-message");
+                hitMessage.textContent = message;
+                hitMessage.style.top = `${50 + hitMessageCount * 30}px`; // Stagger messages vertically
+                document.body.appendChild(hitMessage);
+
+                setTimeout(() => {
+                    hitMessage.remove();
+                    hitMessageCount--;
+                }, 1000);
+            }
+
+            function createFallingImage(x, y) {
+                const fallingImage = document.createElement("img");
+                fallingImage.src = "mouse.png"; // Replace with the URL of your image
+                fallingImage.classList.add("falling-image");
+                fallingImage.style.left = `${x}px`;
+                fallingImage.style.top = `${y}px`;
+                document.body.appendChild(fallingImage);
+
+                setTimeout(() => {
+                    fallingImage.remove();
+                }, 3000);
+            }
+
+            function createShowerOfImages() {
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+                const numberOfImages = 200; // Adjust this number as needed
+
+                for (let i = 0; i < numberOfImages; i++) {
+                    const fallingImage = document.createElement("img");
+                    fallingImage.src = "mouse.png"; // Replace with the URL of your image
+                    fallingImage.classList.add("falling-image");
+                    fallingImage.style.left = `${Math.random() * screenWidth}px`;
+                    fallingImage.style.top = `${Math.random() * screenHeight}px`;
+                    document.body.appendChild(fallingImage);
+
+                    setTimeout(() => {
+                        fallingImage.remove();
+                    }, 3000);
+                }
+            }
+
+            function generateRandomPlayers() {
+                const names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy"];
+                const players = [];
+
+                for (let i = 0; i < 10; i++) {
+                    const player = {
+                        name: names[Math.floor(Math.random() * names.length)],
+                        clicks: Math.floor(Math.random() * 1000)
+                    };
+                    players.push(player);
+                }
+
+                updatePlayersList(players);
+            }
+
+            function updatePlayersList(players) {
+                const oldPlayers = document.querySelectorAll(".player");
+                oldPlayers.forEach(player => player.classList.add("fade-out"));
+
+                setTimeout(() => {
+                    randomPlayersContainer.innerHTML = "";
+
+                    players.forEach(player => {
+                        const playerDiv = document.createElement("div");
+                        playerDiv.classList.add("player");
+                        playerDiv.textContent = `${player.name}: ${player.clicks} clicks`;
+                        randomPlayersContainer.appendChild(playerDiv);
+
+                        setTimeout(() => {
+                            playerDiv.classList.add("fade-in");
+                        }, 100);
+                    });
+                }, 1000);
+            }
+
+            // Generate initial random players
+            generateRandomPlayers();
+
+            // Update random players every 5 seconds
+            setInterval(generateRandomPlayers, 5000);
+        });
+    </script>
+</body>
+</html>
